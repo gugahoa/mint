@@ -16,8 +16,9 @@ trait HTTPClient {
 
 impl HTTPClient for Empty {
     type Output = String;
-    fn get(url: String, _user_agent: String) -> Pin<Box<dyn Future<Output = Self::Output>>> {
-        Box::pin(async { url })
+    fn get(url: String, user_agent: String) -> Pin<Box<dyn Future<Output = Self::Output>>> {
+        let ret = url + &user_agent;
+        Box::pin(async { ret })
     }
 }
 
