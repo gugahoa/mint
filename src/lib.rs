@@ -36,13 +36,13 @@ pub struct Client<'a, T, U: HTTPClient> {
 }
 
 impl<'a, U: HTTPClient> Client<'a, RobotUnfetched, U> {
-    pub fn new(host: String, client: U) -> Self {
+    pub fn new(host: String, crawler_name: String, client: U) -> Self {
         let robot = RobotFileParser::new(&host);
         Client {
             _marker: PhantomData,
             client,
             host,
-            crawler_name: "".into(),
+            crawler_name,
             robot,
         }
     }
@@ -62,7 +62,7 @@ impl<'a, U: HTTPClient> Client<'a, RobotUnfetched, U> {
             _marker: PhantomData,
             client: self.client,
             host: self.host,
-            crawler_name: "".into(),
+            crawler_name: self.crawler_name,
             robot,
         }
     }
