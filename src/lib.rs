@@ -2,6 +2,8 @@ use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
 
+use robotparser::RobotFileParser;
+
 struct RobotFetched;
 struct RobotUnfetched;
 
@@ -22,34 +24,48 @@ impl HTTPClient for Empty {
     }
 }
 
-pub struct Client<T, U: HTTPClient> {
+pub struct Client<'a, T, U: HTTPClient> {
     _marker: PhantomData<T>,
     client: U,
     host: String,
     crawler_name: String,
+    robot: RobotFileParser<'a>,
 }
 
-impl<U: HTTPClient> Client<RobotUnfetched, U> {
+impl<'a, U: HTTPClient> Client<'a, RobotUnfetched, U> {
     pub fn new(host: String, client: U) -> Self {
+        let robot = RobotFileParser::new(&host);
         Client {
             _marker: PhantomData,
             client,
             host,
-            crawler_name: "".into()
+            crawler_name: "".into(),
+            robot,
         }
     }
 
-    pub async fn fetch_robots(self) -> Client<RobotFetched, U> {
+    pub async fn fetch_robots(self) -> Client<'a, RobotFetched, U> {
+        let response: String = self
+            .client
+            .get(&format!("{}/robots.txt", &self.host), &self.crawler_name)
+            .await
+            .into();
+
+        let robot = RobotFileParser::new(&self.host);
+        let lines: Vec<&str> = response.split("\n").collect();
+        robot.parse(&lines);
+
         Client {
             _marker: PhantomData,
             client: self.client,
             host: self.host,
             crawler_name: "".into(),
+            robot,
         }
     }
 }
 
-impl<U: HTTPClient> Client<RobotFetched, U> {
+impl<'a, U: HTTPClient> Client<'a, RobotFetched, U> {
     pub async fn get(&self, path: String) -> Result<String, String> {
         Ok(format!("{}{}{}", self.host, self.crawler_name, path))
     }
