@@ -4,7 +4,9 @@ use std::pin::Pin;
 
 use robotparser::RobotFileParser;
 
+#[derive(Debug)]
 struct RobotFetched;
+#[derive(Debug)]
 struct RobotUnfetched;
 
 // TODO: Delete me
@@ -24,6 +26,7 @@ impl HTTPClient for Empty {
     }
 }
 
+#[derive(Debug)]
 pub struct Client<'a, T, U: HTTPClient> {
     _marker: PhantomData<T>,
     client: U,
