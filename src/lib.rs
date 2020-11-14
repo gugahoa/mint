@@ -69,15 +69,56 @@ impl<'a, U: HTTPClient> Client<'a, RobotUnfetched, U> {
 }
 
 impl<'a, U: HTTPClient> Client<'a, RobotFetched, U> {
-    pub async fn get(&self, path: String) -> Result<String, String> {
+    pub async fn get(&self, path: &str) -> Result<String, String> {
+        if !self.robot.can_fetch::<&str>(&self.crawler_name, path) {
+            return Err("can't fetch".into());
+        }
         Ok(format!("{}{}{}", self.host, self.crawler_name, path))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    const ROBOTS_TXT: &'static str = "
+        User-agent: SemrushBot
+        User-agent: SemrushBot-SA
+        User-agent: dotbot
+        User-agent: rogerbot
+        User-agent: AhrefsBot
+        User-agent: MJ12bot
+        User-agent: SMTBot
+        User-agent: BLEXBot
+        Disallow: /
+        Crawl-Delay: 1
+
+        User-agent: *
+        Host: https://eshop-prices.com";
+
+    use super::*;
+    #[derive(Debug)]
+    struct TestClient;
+
+    impl HTTPClient for TestClient {
+        type Output = String;
+        fn get(
+            &self,
+            _url: &str,
+            _user_agent: &str,
+        ) -> Pin<Box<dyn Future<Output = Self::Output>>> {
+            Box::pin(async { ROBOTS_TXT.into() })
+        }
+    }
+
+    #[tokio::test]
+    async fn cant_fetch() {
+        let client = Client::new(
+            "https://eshop-prices.com".into(),
+            "dotbot".into(),
+            TestClient,
+        );
+        let client = client.fetch_robots().await;
+
+        dbg!(&client);
+        assert_eq!(client.get("/").await, Err("can't fetch".into()));
     }
 }

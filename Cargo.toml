@@ -8,3 +8,6 @@ edition = "2018"
 
 [dependencies]
 robotparser = "0.10"
+
+[dev-dependencies]
+tokio = { version = "0.3", features = ["full"]}
