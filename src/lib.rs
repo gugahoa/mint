@@ -9,15 +9,15 @@ struct RobotUnfetched;
 #[derive(Debug)]
 struct Empty;
 
-trait HTTPClient {
+pub trait HTTPClient {
     type Output: Into<String>;
-    fn get(&self, url: String, user_agent: String) -> Pin<Box<dyn Future<Output = Self::Output>>>;
+    fn get(&self, url: &str, user_agent: &str) -> Pin<Box<dyn Future<Output = Self::Output>>>;
 }
 
 impl HTTPClient for Empty {
     type Output = String;
-    fn get(&self, url: String, user_agent: String) -> Pin<Box<dyn Future<Output = Self::Output>>> {
-        let ret = url + &user_agent;
+    fn get(&self, url: &str, user_agent: &str) -> Pin<Box<dyn Future<Output = Self::Output>>> {
+        let ret = format!("{}{}", url, user_agent);
         Box::pin(async { ret })
     }
 }
