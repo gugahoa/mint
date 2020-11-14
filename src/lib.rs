@@ -25,6 +25,7 @@ pub struct Client<T, U: HTTPClient> {
     _marker: PhantomData<T>,
     client: U,
     host: String,
+    crawler_name: String,
 }
 
 impl<U: HTTPClient> Client<RobotUnfetched, U> {
@@ -33,21 +34,23 @@ impl<U: HTTPClient> Client<RobotUnfetched, U> {
             _marker: PhantomData,
             client,
             host,
+            crawler_name: "".into()
         }
     }
 
     pub async fn fetch_robots(self) -> Client<RobotFetched, U> {
         Client {
+            _marker: PhantomData,
             client: self.client,
             host: self.host,
-            _marker: PhantomData,
+            crawler_name: "".into(),
         }
     }
 }
 
 impl<U: HTTPClient> Client<RobotFetched, U> {
     pub async fn get(&self, path: String) -> Result<String, String> {
-        Ok(self.host.clone() + &path)
+        Ok(format!("{}{}{}", self.host, self.crawler_name, path))
     }
 }
 
