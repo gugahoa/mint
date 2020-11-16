@@ -1,0 +1,14 @@
+User-agent: SemrushBot
+User-agent: SemrushBot-SA
+User-agent: dotbot
+User-agent: rogerbot
+User-agent: AhrefsBot
+User-agent: MJ12bot
+User-agent: SMTBot
+User-agent: BLEXBot
+Disallow: /
+Crawl-Delay: 1
+
+User-agent: *
+Host: https://eshop-prices.com
+

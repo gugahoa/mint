@@ -7,6 +7,8 @@ use std::time::Instant;
 
 use robotparser::RobotFileParser;
 
+mod robots;
+
 #[derive(Debug)]
 struct RobotFetched;
 #[derive(Debug)]
@@ -103,88 +105,5 @@ impl<'a, U: HTTPClient> Client<'a, RobotFetched, U> {
 
         let mut self_robot = self.robot.borrow_mut();
         *self_robot = robot;
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    const ROBOTS_TXT: &'static str = "
-User-agent: SemrushBot
-User-agent: SemrushBot-SA
-User-agent: dotbot
-User-agent: rogerbot
-User-agent: AhrefsBot
-User-agent: MJ12bot
-User-agent: SMTBot
-User-agent: BLEXBot
-Disallow: /
-Crawl-Delay: 1
-
-User-agent: *
-Host: https://eshop-prices.com
-";
-
-    use std::rc::Rc;
-
-    use super::*;
-    #[derive(Debug)]
-    struct TestClient {
-        number_of_fetches: RefCell<u32>,
-    }
-
-    impl HTTPClient for Rc<TestClient> {
-        type Output = String;
-        fn get(
-            &self,
-            _url: &str,
-            _user_agent: &str,
-        ) -> Pin<Box<dyn Future<Output = Self::Output>>> {
-            let new_number_of_fetches = *self.number_of_fetches.borrow() + 1;
-            let mut number_of_fetches = self.number_of_fetches.borrow_mut();
-            *number_of_fetches = new_number_of_fetches;
-            Box::pin(async { ROBOTS_TXT.into() })
-        }
-    }
-
-    #[tokio::test]
-    async fn cant_fetch() {
-        let test_client = Rc::new(TestClient {
-            number_of_fetches: RefCell::new(0),
-        });
-
-        let client = Client::new(
-            "https://eshop-prices.com".into(),
-            "dotbot".into(),
-            Duration::new(60 * 60, 0),
-            test_client.clone(),
-        );
-        let client = client.fetch_robots().await;
-
-        assert_eq!(client.get("/").await, Err("can't fetch".into()));
-        assert_eq!(*test_client.number_of_fetches.borrow(), 1);
-    }
-
-    #[tokio::test]
-    async fn refetches_after_period() {
-        let test_client = Rc::new(TestClient {
-            number_of_fetches: RefCell::new(0),
-        });
-
-        let refetch_period = Duration::new(60 * 60, 0);
-        let client = Client::new(
-            "https://eshop-prices.com".into(),
-            "allowed robot".into(),
-            refetch_period,
-            test_client.clone(),
-        );
-        let client = client.fetch_robots().await;
-        let client = Client {
-            last_fetch: Instant::now() - refetch_period,
-            ..client
-        };
-
-        dbg!(&client);
-        assert_eq!(client.get("/").await, Ok("".into()));
-        assert_eq!(*test_client.number_of_fetches.borrow(), 2);
     }
 }
